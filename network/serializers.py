@@ -22,14 +22,21 @@ class NetworkObjectUpdateSerializer(serializers.ModelSerializer):
 
         fields = [key for key in instance.__dict__.keys()]
         for field in fields:
-            instance.__dict__[field] = validated_data.get(field, instance.__dict__[field])
+            instance.__dict__[field] = validated_data.get(
+                field,
+                instance.__dict__[field]
+            )
 
-        if instance.object_type == 'factory' and instance.hierarchy != '0':
-            raise ValidationError('Завод должен быть на 0 уровне иерархии в сети.')
+        if instance.object_type == 'factory' and instance.hierarchy != 0:
+            raise ValidationError(
+                'Завод должен быть на 0 уровне иерархии в сети.'
+            )
         if instance.object_type != 'factory' \
                 and instance.hierarchy != instance.supplier.hierarchy + 1:
-            raise ValidationError('Уровень иерархии не соответствует правилу: '
-                                  'поставщик - предыдущий по иерархии объект сети')
+            raise ValidationError(
+                'Уровень иерархии не соответствует правилу: '
+                'поставщик - предыдущий по иерархии объект сети'
+            )
         if instance.hierarchy > 2:
             raise ValidationError('Некорректно выбран поставщик.')
         instance.save()
