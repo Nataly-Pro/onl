@@ -4,11 +4,14 @@ from rest_framework.exceptions import ValidationError
 
 from network.models import NetworkObject
 from network.permissions import UserPermissions
-from network.serializers import NetworkObjectCreateSerializer, NetworkObjectUpdateSerializer, \
+from network.serializers import NetworkObjectCreateSerializer, \
+    NetworkObjectUpdateSerializer, \
     NetworkObjectViewSerializer
 
 
 class NetworkViewSet(viewsets.ModelViewSet):
+    """ Вьюсет для работы с объектом сети"""
+
     queryset = NetworkObject.objects.all()
     permission_classes = [UserPermissions]
     filter_backends = [DjangoFilterBackend]
@@ -16,9 +19,7 @@ class NetworkViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         new_object = serializer.save()
-        if new_object.object_type == 'factory':
-            new_object.hierarchy = 0
-        else:
+        if new_object.object_type != 'factory':
             if new_object.supplier:
                 new_object.hierarchy = new_object.supplier.hierarchy + 1
             else:
