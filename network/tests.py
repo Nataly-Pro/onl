@@ -22,20 +22,11 @@ class NetworkAPITestCase(APITestCase):
         self.user.set_password('123456')
         self.user.save()
         self.access_token = str(RefreshToken.for_user(self.user).access_token)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
-
-        self.product_1 = Product.objects.create(
-            product_name='test_phone',
-            model='125',
-            release_date='2020-12-20'
-        )
-        self.product_2 = Product.objects.create(
-            product_name='test_TV',
-            model='845',
-            release_date='2023-12-20'
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f'Bearer {self.access_token}'
         )
 
-        self.network_factory = NetworkObject.objects.create(
+        self.factory = NetworkObject.objects.create(
             object_type='factory',
             name='Test factory',
             email='test@test.com',
@@ -45,7 +36,7 @@ class NetworkAPITestCase(APITestCase):
             bld='5'
         )
 
-        self.network_entrepreneur = NetworkObject.objects.create(
+        self.entrepreneur = NetworkObject.objects.create(
             object_type='entrepreneur',
             name='Test entrepreneur',
             email='entrepreneur@test.com',
@@ -53,25 +44,38 @@ class NetworkAPITestCase(APITestCase):
             city='Тверь',
             street='Областная',
             bld='25',
-            supplier=self.network_factory,
-            debt=500
+            supplier=self.factory,
+            debt=500,
+            hierarchy=1
         )
-        self.network_entrepreneur.products.add(self.product_1, self.product_2)
+
+        self.product_1 = Product.objects.create(
+            product_name='test_phone',
+            model='125',
+            release_date='2020-12-20'
+        )
+        self.product_1.suppliers.add(self.factory)
+
+        self.product_2 = Product.objects.create(
+            product_name='test_TV',
+            model='845',
+            release_date='2023-12-20'
+        )
+        self.product_2.suppliers.add(self.factory)
 
     def test_create(self):
         """ Тестирование создания объекта сети """
 
         data = {
-            'object_type': 'retail',
-            "name": 'Test retail',
-            "email": 'retail@test.com',
-            "country": 'Россия',
-            "city": 'Москва',
-            "street": 'Тестовая',
-            "bld": '6',
-            "supplier": self.network_factory.id,
-            "debt": 1200,
-            "products": [1, 2]
+            "object_type": "retail",
+            "name": "Test retail",
+            "email": "retail@test.com",
+            "country": "Россия",
+            "city": "Москва",
+            "street": "Тестовая",
+            "bld": "6",
+            "supplier": self.factory.id,
+            "debt": 1200
         }
         url = reverse('network:network-list')
         response = self.client.post(url, data=data)
@@ -86,7 +90,7 @@ class NetworkAPITestCase(APITestCase):
         url = reverse('network:network-list')
         response = self.client.get(url)
         serializer_data = NetworkObjectViewSerializer(
-            [self.network_factory, self.network_entrepreneur],
+            [self.factory, self.entrepreneur],
             many=True
         ).data
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -95,24 +99,23 @@ class NetworkAPITestCase(APITestCase):
     def test_detail_view(self):
         """ Тестирование просмотра 1 объекта"""
 
-        url = reverse('network:network-detail', args=(self.network_entrepreneur.pk,))
+        url = reverse('network:network-detail', args=(self.entrepreneur.pk,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json()['name'], self.network_entrepreneur.name)
+        self.assertEqual(response.json()['name'], self.entrepreneur.name)
 
     def test_update(self):
         """ Тестирование изменения объекта"""
 
-        url = reverse('network:network-detail', args=(self.network_entrepreneur.pk,))
+        url = reverse('network:network-detail', args=(self.entrepreneur.pk,))
         response = self.client.patch(url, {'name': 'new name'})
-        self.network_entrepreneur.refresh_from_db()
-
+        self.entrepreneur.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.network_entrepreneur.name, 'new name')
+        self.assertEqual(self.entrepreneur.name, 'new name')
 
+    def test_delete(self):
+        """ Тестирование удаления объекта """
 
-
-
-
-
-
+        url = reverse('network:network-detail', args=(self.entrepreneur.pk,))
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
