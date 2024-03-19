@@ -11,7 +11,7 @@ admin.site.register(Product)
 @admin.register(NetworkObject)
 class NetworkObjectAdmin(admin.ModelAdmin):
     list_display = [f.name for f in NetworkObject._meta.fields] \
-                   + ['supplier_link']
+                   + ['supplier_link', 'products']
     readonly_fields = ('supplier_link',)
     list_filter = ('city',)
     search_fields = ('city',)
@@ -35,3 +35,11 @@ class NetworkObjectAdmin(admin.ModelAdmin):
     supplier_link.allow_tags = True
     supplier_link.admin_order_field = 'supplier'
     supplier_link.short_description = 'ссылка на поставщика'
+
+    def products(self, obj):
+        if obj.supplier:
+            return [product.product_name for product in obj.products]
+        else:
+            return None
+
+    products.short_description = 'Товары поставщика'
